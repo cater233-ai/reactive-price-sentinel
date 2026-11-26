@@ -1,0 +1,15 @@
+{
+  "deployer": "0xBD6593d8E45590956da1F25458fB694C8535Df28",
+  "mockPriceFeed": {
+    "chain": "Ethereum Sepolia (11155111)",
+    "address": "0x86c7c9416e9e0500c4749fc183cccdead1bb0d94"
+  },
+  "priceSentinel": {
+    "chain": "Reactive Lasna (5318007)",
+    "address": "0x86c7c9416e9e0500c4749fc183cccdead1bb0d94"
+  },
+  "guardedVault": {
+    "chain": "Ethereum Sepolia (11155111)",
+    "address": "0xd1ce2585674ecf60b8b441820caf9bc6b66ab4f4"
+  }
+}
