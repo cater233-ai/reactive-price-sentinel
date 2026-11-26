@@ -1,0 +1,11 @@
+# Build output
+/out
+/cache
+/broadcast
+
+# Local environment and keys — never commit
+.env
+deployments.json
+
+# Demo scratch
+demo/work/
