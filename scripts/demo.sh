@@ -63,12 +63,12 @@ TX=$(cast send "$FEED" "setPrice(uint256)" 3000 \
 log "origin tx (out-of-band tick): $TX"
 wait_for_mode true
 log "protectedMode: true — callback delivered, withdrawals frozen"
-CB=$(cast logs --rpc-url "$SEPOLIA_RPC" --from-block -5000 --address "$VAULT" \
+CB=$(cast logs --rpc-url "$SEPOLIA_RPC" --from-block "$(( $(cast block-number --rpc-url "$SEPOLIA_RPC") - 5000 ))" --address "$VAULT" \
   "ProtectionApplied(uint256,bool,uint256)" --json | python3 -c "import json,sys; print(json.load(sys.stdin)[-1]['transactionHash'])")
 log "callback tx (ProtectionApplied): $CB"
 
 say "3b. Withdrawal attempt while protected — expect a revert"
-if cast call "$VAULT" "withdraw(uint256)" 1000000000000000 --from "$(cast wallet address --private-key "$PRIVATE_KEY")" --rpc-url "$SEPOLIA_RPC" 2>&1 | grep -qi "WithdrawalsProtected"; then
+if cast call "$VAULT" "withdraw(uint256)" 1000000000000000 --from "$(cast wallet address --private-key "$PRIVATE_KEY")" --rpc-url "$SEPOLIA_RPC" 2>&1 | grep -qiE "WithdrawalsProtected|0xf2b7d6ee"; then
   log "withdraw reverted with WithdrawalsProtected, as designed"
 else
   log "WARNING: withdraw simulation did not revert as expected"
@@ -80,7 +80,7 @@ TX=$(cast send "$FEED" "setPrice(uint256)" 2200 \
 log "origin tx (release tick): $TX"
 wait_for_mode false
 log "protectedMode: false — vault released"
-CB=$(cast logs --rpc-url "$SEPOLIA_RPC" --from-block -5000 --address "$VAULT" \
+CB=$(cast logs --rpc-url "$SEPOLIA_RPC" --from-block "$(( $(cast block-number --rpc-url "$SEPOLIA_RPC") - 5000 ))" --address "$VAULT" \
   "ProtectionApplied(uint256,bool,uint256)" --json | python3 -c "import json,sys; print(json.load(sys.stdin)[-1]['transactionHash'])")
 log "callback tx (ProtectionApplied): $CB"
 
@@ -90,14 +90,37 @@ TX=$(cast send "$VAULT" "withdraw(uint256)" 10000000000000000 \
 log "withdraw tx: $TX"
 
 say "Reactive transactions on Lasna"
-curl -s "https://lasna.reactscan.net/api/v2/addresses/$SENTINEL/transactions" \
-  | python3 -c "
-import json, sys
-d = json.load(sys.stdin)
-for it in d.get('items', [])[:10]:
-    m = (it.get('method') or '')
-    if m in ('react', 'setRecipient'):
-        print(f\"lasna tx ({m}): {it['hash']}\")" | tee -a "$EVIDENCE"
+# The explorer API is not always reachable; scan the sentinel's
+# ProtectionRequested events straight from the Lasna RPC instead
+# (getLogs there is capped at 30k blocks per request, so scan in chunks).
+python3 - "$SENTINEL" "$LASNA_RPC" <<'PYEOF' | tee -a "$EVIDENCE"
+import json, subprocess, sys
+sentinel, rpc = sys.argv[1], sys.argv[2]
+def cast(*args):
+    out = subprocess.run(["cast", *args], capture_output=True, text=True)
+    return out.stdout
+now = int(cast("block-number", "--rpc-url", rpc))
+events = []
+start = now
+for _ in range(8):
+    frm = max(0, start - 29999)
+    raw = cast("logs", "--rpc-url", rpc, "--from-block", str(frm),
+               "--to-block", str(start), "--address", sentinel,
+               "ProtectionRequested(bool,uint256)", "--json")
+    try:
+        events += json.loads(raw)
+    except Exception:
+        pass
+    start = frm - 1
+    if start < 0:
+        break
+events.sort(key=lambda e: int(e["blockNumber"], 16))
+for e in events:
+    data = e["data"]
+    protect = int(data[2:66], 16) == 1
+    price = int(data[66:130], 16)
+    print(f"lasna react tx (ProtectionRequested protect={str(protect).lower()}, price={price}): {e['transactionHash']}")
+PYEOF
 
 echo
 echo "Demo complete. Evidence written to $EVIDENCE"

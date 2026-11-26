@@ -37,16 +37,20 @@ lREACT funding: two faucet swaps of 0.02 Sepolia ETH each
 `0x031e9aff49c6a92f5c69cdc272db70a7edf1844ebfcb8797d00fa49e684aaef4`),
 4 lREACT total received on Lasna.
 
-## Full-loop evidence (from `scripts/demo.sh`, to be filled after the run)
+## Full-loop evidence (from the `scripts/demo.sh` run on 2026-11-26)
 
 | Leg | Tx hash |
 |---|---|
-| Origin event — in-band tick `setPrice(2100)` | _pending_ |
-| Origin event — out-of-band tick `setPrice(3000)` | _pending_ |
-| Reactive transaction on Lasna (`react()`) | _pending_ |
-| Callback on Sepolia — protection applied | _pending_ |
-| Origin event — release tick `setPrice(2200)` | _pending_ |
-| Callback on Sepolia — protection released | _pending_ |
-| Withdrawal after release | _pending_ |
+| Origin event — in-band tick `setPrice(2100)` | `0x69d4bed732722d643a6de4d97e5e612668aceb74b8183d3b1e1a10a89470894e` |
+| Origin event — out-of-band tick `setPrice(3000)` | `0x124f67ea46ff1b884b748ced201ee79958cc25eb99f90ef2d3bc1a7d5ad2a153` |
+| Reactive transaction on Lasna (`react()`, protect) | `0xb1272c7013a5c5c73d39e8b0ccd4616212e28e6f78174edb6e1dc63a405f38d2` |
+| Callback on Sepolia — protection applied | `0xa3a5700e1c8b93d71e9c845cb186dfe22c47f2e3a625e3ff83e3d11f428d3214` |
+| Origin event — release tick `setPrice(2200)` | `0x36cb0de1355a702bf90a40852dfa59bc2a481e4db4a32000965595c0bcc92d74` |
+| Reactive transaction on Lasna (`react()`, release) | `0x2751e6882f4619e23344cb78e5a375a168b2130861a7c00aa0639ecd19133d0f` |
+| Callback on Sepolia — protection released | `0xb24d9052f0559de0dbe2b842a47b66de4d7385170730aec9161d6bbde5005124` |
+| Withdrawal after release | `0xa59fbc31f60086e71577f5ae7f94e86269b5d4dd6ab426883f3bcc82980f628d` |
+
+Full run log: [demo/evidence.md](demo/evidence.md). Deposit for the run:
+`0x775eb50ef069fb6ff3a59984c93242f4a8cd36558aa7cb7c76b2257ac58107ab`.
 
 Explorers: Sepolia — https://sepolia.etherscan.io · Lasna — https://lasna.reactscan.net
